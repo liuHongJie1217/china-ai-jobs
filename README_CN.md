@@ -4,7 +4,7 @@
 
 本项目基于《中华人民共和国职业分类大典》(2022版)，使用 Claude (Anthropic) 对 **394 个职业**进行 AI 冲击指数评分(0–10)，并以交互式 Treemap 可视化呈现——**面积 = 就业人数，颜色 = AI 冲击程度**。
 
-**[在线体验 →](TODO)** · 灵感来源：[@karpathy/jobs](https://github.com/karpathy/jobs)
+**[在线体验 →](https://liuhongjie1217.github.io/china-ai-jobs/)** · 灵感来源：[@karpathy/jobs](https://github.com/karpathy/jobs)
 
 ---
 
