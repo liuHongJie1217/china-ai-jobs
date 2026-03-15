@@ -1,0 +1,505 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>中国职业 AI 替代指数 | AI Replacement Index of the Chinese Job Market</title>
+<meta name="description" content="基于中国职业分类大典，使用 Claude 评估394个职业的AI冲击指数。交互式可视化。">
+<meta property="og:title" content="中国职业 AI 替代指数">
+<meta property="og:description" content="394个中国职业的AI冲击全景图 - 你的职业安全吗？">
+<meta property="og:type" content="website">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🤖</text></svg>">
+<script src="https://d3js.org/d3.v7.min.js"></script>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{--bg:#0d1117;--card:#161b22;--border:#30363d;--text:#e6edf3;--text2:#8b949e;--accent:#58a6ff}
+body{background:var(--bg);color:var(--text);font-family:system-ui,-apple-system,"PingFang SC","Microsoft YaHei",sans-serif;line-height:1.6;overflow-x:hidden}
+a{color:var(--accent);text-decoration:none}
+a:hover{text-decoration:underline}
+
+.container{max-width:1400px;margin:0 auto;padding:0 20px}
+
+/* Header */
+header{text-align:center;padding:48px 20px 32px}
+header h1{font-size:2.4em;font-weight:800;letter-spacing:2px;margin-bottom:4px}
+header .subtitle{font-size:1.1em;color:var(--text2);margin-bottom:8px}
+header .desc{font-size:0.9em;color:var(--text2)}
+header .desc span{margin:0 4px}
+
+/* Search */
+.search-wrap{max-width:480px;margin:24px auto 0;position:relative}
+.search-wrap input{width:100%;padding:12px 16px 12px 42px;border-radius:8px;border:1px solid var(--border);background:var(--card);color:var(--text);font-size:1em;outline:none;transition:border-color .2s}
+.search-wrap input:focus{border-color:var(--accent)}
+.search-wrap .icon{position:absolute;left:14px;top:50%;transform:translateY(-50%);color:var(--text2);font-size:1.1em;pointer-events:none}
+
+/* Stats */
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin:32px auto;max-width:800px}
+.stat-card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:20px 24px;text-align:center}
+.stat-card .value{font-size:2.2em;font-weight:700;color:var(--text)}
+.stat-card .label{font-size:0.85em;color:var(--text2);margin-top:4px}
+
+/* Section titles */
+.section-title{font-size:1.3em;font-weight:700;margin:40px 0 16px;padding-left:12px;border-left:3px solid var(--accent)}
+
+/* Treemap */
+#treemap-wrap{position:relative}
+#treemap{border-radius:8px;overflow:hidden}
+#treemap .cell{stroke:#0d1117;stroke-width:1px;cursor:pointer;transition:opacity .15s}
+#treemap .cell:hover{stroke:#fff;stroke-width:2px}
+#treemap .cell-label{pointer-events:none;fill:#fff;font-size:11px;text-anchor:middle;dominant-baseline:central;text-shadow:0 1px 3px rgba(0,0,0,.8)}
+#treemap .cell.dimmed{opacity:.15}
+#treemap .cell.highlight{stroke:#fff;stroke-width:2.5px;animation:pulse 1s ease-in-out infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.6}}
+
+/* Legend */
+.legend{display:flex;align-items:center;gap:8px;margin:12px 0 0;font-size:.85em;color:var(--text2);flex-wrap:wrap}
+.legend-bar{width:200px;height:12px;border-radius:6px;flex-shrink:0}
+.legend span{white-space:nowrap}
+
+/* Tooltip */
+.tooltip{position:fixed;pointer-events:none;background:var(--card);border:1px solid var(--border);border-radius:10px;padding:16px;width:320px;box-shadow:0 8px 30px rgba(0,0,0,.5);z-index:999;font-size:.9em;opacity:0;transition:opacity .15s}
+.tooltip.show{opacity:1}
+.tooltip .tt-name{font-size:1.15em;font-weight:700;margin-bottom:8px}
+.tooltip .tt-bar-wrap{background:#21262d;border-radius:4px;height:8px;margin:6px 0 10px;overflow:hidden}
+.tooltip .tt-bar{height:100%;border-radius:4px;transition:width .3s}
+.tooltip .tt-grid{display:grid;grid-template-columns:auto 1fr;gap:4px 12px}
+.tooltip .tt-label{color:var(--text2)}
+.tooltip .tt-val{font-weight:500}
+.tooltip .tt-rationale{margin-top:10px;padding-top:10px;border-top:1px solid var(--border);color:var(--text2);font-size:.85em;line-height:1.5}
+
+/* Histogram */
+#histogram{width:100%;height:280px}
+#histogram .bar{cursor:pointer;transition:opacity .2s}
+#histogram .bar:hover{opacity:.8}
+#histogram text{fill:var(--text2);font-size:12px}
+#histogram .axis line,#histogram .axis path{stroke:var(--border)}
+
+/* Charts row */
+.charts-row{display:grid;grid-template-columns:1fr 1fr;gap:24px;margin:24px 0}
+.chart-card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:20px}
+.chart-card h3{font-size:1em;font-weight:600;margin-bottom:12px}
+.chart-card svg{width:100%}
+.chart-card svg text{fill:var(--text2);font-size:11px}
+.chart-card svg .axis line,.chart-card svg .axis path{stroke:var(--border)}
+.chart-card svg .dot{cursor:pointer;transition:opacity .2s}
+.chart-card svg .dot:hover{opacity:.7}
+
+/* Category table */
+.cat-table{width:100%;border-collapse:collapse;margin:16px 0 40px}
+.cat-table th,.cat-table td{padding:12px 16px;text-align:left;border-bottom:1px solid var(--border)}
+.cat-table th{color:var(--text2);font-weight:600;font-size:.85em;text-transform:uppercase;letter-spacing:.5px}
+.cat-table td{font-size:.95em}
+.cat-table .bar-cell{width:180px}
+.cat-table .mini-bar{background:#21262d;border-radius:3px;height:6px;overflow:hidden}
+.cat-table .mini-bar-fill{height:100%;border-radius:3px}
+.cat-table tr:hover{background:rgba(88,166,255,.05)}
+
+/* Footer */
+footer{border-top:1px solid var(--border);padding:32px 20px;margin-top:40px;text-align:center;color:var(--text2);font-size:.85em;line-height:1.8}
+footer .method{max-width:700px;margin:0 auto 16px;text-align:left}
+
+/* Responsive */
+@media(max-width:768px){
+  header{padding:32px 12px 20px}
+  header h1{font-size:1.5em;letter-spacing:0}
+  header .subtitle{font-size:.9em}
+  header .desc{font-size:.78em}
+  .container{padding:0 12px;overflow-x:hidden}
+  .stats{grid-template-columns:1fr;gap:10px;max-width:100%}
+  .stat-card{padding:14px 16px}
+  .stat-card .value{font-size:1.8em}
+  .section-title{font-size:1.1em;margin:28px 0 12px}
+  #histogram{height:220px}
+  #treemap-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch}
+  #treemap{min-width:600px}
+  .charts-row{grid-template-columns:1fr;gap:16px}
+  .chart-card{padding:14px}
+  .tooltip{width:260px;font-size:.8em;max-width:90vw}
+  .cat-table-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch}
+  .cat-table{font-size:.78em;min-width:500px}
+  .cat-table th,.cat-table td{padding:8px 10px}
+  .cat-table .bar-cell{width:80px}
+  footer{padding:24px 12px;font-size:.78em}
+  footer .method{font-size:.75em}
+}
+</style>
+</head>
+<body>
+
+<header>
+  <h1>中国职业 AI 替代指数</h1>
+  <div class="subtitle">AI Replacement Index of the Chinese Job Market</div>
+  <div class="desc">
+    <span>394个职业</span> · <span>面积 = 就业人数</span> · <span>颜色 = AI冲击指数</span>
+  </div>
+  <div class="desc" style="margin-top:6px">
+    数据: 中国职业分类大典(2022) | 评分: Claude (Anthropic) | 灵感: <a href="https://karpathy.ai/jobs/" target="_blank">karpathy.ai/jobs</a> | <!-- TODO: 替换为实际仓库地址 --><a href="javascript:void(0)">GitHub</a>
+  </div>
+  <div class="search-wrap">
+    <span class="icon">🔍</span>
+    <input id="search" type="text" placeholder="搜索你的职业...">
+  </div>
+</header>
+
+<div class="container">
+  <!-- Stats -->
+  <div class="stats">
+    <div class="stat-card"><div class="value" id="s-total">394</div><div class="label">总职业数</div></div>
+    <div class="stat-card"><div class="value" id="s-avg">4.62 <small style="font-size:.5em">/ 10</small></div><div class="label">加权平均冲击指数</div></div>
+    <div class="stat-card"><div class="value" id="s-high">10.6%</div><div class="label">高冲击(≥7)就业占比</div></div>
+  </div>
+
+  <!-- Histogram -->
+  <div class="section-title">冲击指数分布（按就业人数）</div>
+  <div id="histogram"></div>
+
+  <!-- Treemap -->
+  <div class="section-title">职业冲击全景图</div>
+  <div class="legend">
+    <span>低冲击 0 ←</span>
+    <div class="legend-bar" id="legend-bar"></div>
+    <span>→ 10 高冲击</span>
+    <span style="margin-left:24px">面积 = 从业人数（万人）</span>
+  </div>
+  <div id="treemap-wrap">
+    <svg id="treemap"></svg>
+  </div>
+
+  <!-- Scatter + Box -->
+  <div class="section-title">多维分析</div>
+  <div class="charts-row">
+    <div class="chart-card">
+      <h3>薪资 vs AI冲击指数</h3>
+      <svg id="scatter"></svg>
+    </div>
+    <div class="chart-card">
+      <h3>学历 vs AI冲击指数</h3>
+      <svg id="boxplot"></svg>
+    </div>
+  </div>
+
+  <!-- Category table -->
+  <div class="section-title">大类排名</div>
+  <div class="cat-table-wrap">
+  <table class="cat-table">
+    <thead><tr><th>大类</th><th>职业数</th><th>就业人数(万)</th><th>平均冲击指数</th><th class="bar-cell"></th></tr></thead>
+    <tbody id="cat-tbody"></tbody>
+  </table>
+  </div>
+</div>
+
+<!-- Tooltip -->
+<div class="tooltip" id="tooltip"></div>
+
+<footer>
+  <div class="method">
+    <strong>方法论</strong>：基于中国职业分类大典(2022版)的职业体系，使用 Claude (Anthropic) 对394个代表性职业进行AI冲击指数评分(1-10)。评分综合考量当前AI技术能力、任务可替代性、中国特有制度与市场因素。就业人数为基于统计年鉴和行业报告的估算值。本图谱仅供参考，不构成任何职业建议。
+  </div>
+  灵感来源: <a href="https://karpathy.ai/jobs/" target="_blank">Andrej Karpathy - Jobs</a>
+</footer>
+
+<script>
+// --- Color scale ---
+const colorScale = d3.scaleLinear()
+  .domain([0, 2.5, 5, 7.5, 10])
+  .range(["#1a9641","#a6d96a","#fee08b","#f46d43","#d73027"])
+  .clamp(true);
+
+// Legend gradient
+const legendBar = document.getElementById("legend-bar");
+const lgStops = d3.range(0,10.1,.5).map(v=>`${colorScale(v)} ${v*10}%`).join(",");
+legendBar.style.background = `linear-gradient(to right,${lgStops})`;
+
+// Replacement type labels
+const rtLabels = {full:"完全替代",partial:"部分替代",augment:"辅助增强"};
+const tlLabels = {"1-3y":"1-3年","3-5y":"3-5年","5-10y":"5-10年","10y+":"10年以上"};
+
+// --- Tooltip ---
+const tooltip = document.getElementById("tooltip");
+function showTooltip(d, event){
+  const rt = rtLabels[d.rt]||d.rt;
+  const tl = tlLabels[d.tl]||d.tl;
+  tooltip.innerHTML = `
+    <div class="tt-name">${d.n}</div>
+    <div style="display:flex;justify-content:space-between;font-size:.85em;color:var(--text2)">
+      <span>${d.sub}</span><span style="font-weight:700;color:${colorScale(d.exp)}">${d.exp}/10</span>
+    </div>
+    <div class="tt-bar-wrap"><div class="tt-bar" style="width:${d.exp*10}%;background:${colorScale(d.exp)}"></div></div>
+    <div class="tt-grid">
+      <span class="tt-label">替代类型</span><span class="tt-val">${rt}</span>
+      <span class="tt-label">时间窗口</span><span class="tt-val">${tl}</span>
+      <span class="tt-label">从业人数</span><span class="tt-val">${d.emp} 万人</span>
+      <span class="tt-label">月薪中位</span><span class="tt-val">${d.sal}K</span>
+      <span class="tt-label">学历要求</span><span class="tt-val">${d.edu}</span>
+      <span class="tt-label">中国因素</span><span class="tt-val">${d.cf}</span>
+    </div>
+    <div class="tt-rationale">${d.ra}</div>`;
+  tooltip.classList.add("show");
+  positionTooltip(event);
+}
+function positionTooltip(e){
+  const tw=320,th=tooltip.offsetHeight,pad=16;
+  let x=e.clientX+pad, y=e.clientY+pad;
+  if(x+tw>window.innerWidth) x=e.clientX-tw-pad;
+  if(y+th>window.innerHeight) y=e.clientY-th-pad;
+  tooltip.style.left=x+"px";
+  tooltip.style.top=y+"px";
+}
+function hideTooltip(){tooltip.classList.remove("show")}
+function showSimpleTooltip(html, event){
+  tooltip.innerHTML = html;
+  tooltip.classList.add("show");
+  positionTooltip(event);
+}
+
+// --- Error display ---
+function showError(msg){
+  const el=document.createElement("div");
+  el.style.cssText="background:#b91c1c;color:#fff;padding:16px 24px;margin:16px auto;max-width:800px;border-radius:8px;font-size:.95em;line-height:1.6";
+  el.innerHTML=msg;
+  document.querySelector(".container").prepend(el);
+}
+
+// --- Load data and render ---
+d3.json("data.json").then(data => {
+  const {meta, categories, jobs} = data;
+
+  // Update stats
+  document.getElementById("s-total").textContent = meta.total_jobs;
+  document.getElementById("s-avg").innerHTML = `${meta.weighted_avg_exp} <small style="font-size:.5em">/ 10</small>`;
+  document.getElementById("s-high").textContent = meta.high_exp_pct + "%";
+
+  // ======== HISTOGRAM ========
+  try{ renderHistogram(jobs); }catch(e){ console.error("Histogram:",e); }
+
+  // ======== TREEMAP ========
+  try{ renderTreemap(jobs); }catch(e){ console.error("Treemap:",e); }
+
+  // ======== SCATTER ========
+  try{ renderScatter(jobs); }catch(e){ console.error("Scatter:",e); }
+
+  // ======== BOXPLOT ========
+  try{ renderBoxplot(jobs); }catch(e){ console.error("Boxplot:",e); }
+
+  // ======== CATEGORY TABLE ========
+  try{ renderCatTable(categories); }catch(e){ console.error("CatTable:",e); }
+
+  // ======== SEARCH ========
+  const searchInput = document.getElementById("search");
+  searchInput.addEventListener("input", () => {
+    const q = searchInput.value.trim().toLowerCase();
+    const cells = d3.selectAll("#treemap .cell");
+    if(!q){
+      cells.classed("dimmed",false).classed("highlight",false);
+      return;
+    }
+    cells.each(function(d){
+      const match = d.data.n.toLowerCase().includes(q) || d.data.sub.toLowerCase().includes(q);
+      d3.select(this).classed("dimmed",!match).classed("highlight",match);
+    });
+  });
+}).catch(err => {
+  console.error("Data load failed:", err);
+  const isFile = location.protocol === "file:";
+  showError(isFile
+    ? "<strong>数据加载失败</strong>：直接打开 HTML 文件会被浏览器 CORS 策略拦截。<br>请使用 HTTP 服务器：<code>cd site && python3 -m http.server 8000</code>，然后访问 <code>http://localhost:8000</code>"
+    : "<strong>数据加载失败</strong>：无法加载 data.json（"+err.message+"）。请确认 data.json 文件存在且与 index.html 在同一目录。");
+});
+
+function renderHistogram(jobs){
+  const margin={top:20,right:30,bottom:40,left:60};
+  const wrap=document.getElementById("histogram");
+  const width=wrap.clientWidth, height=wrap.clientHeight||280;
+  const iw=width-margin.left-margin.right, ih=height-margin.top-margin.bottom;
+
+  const svg=d3.select("#histogram").append("svg").attr("width",width).attr("height",height);
+  const g=svg.append("g").attr("transform",`translate(${margin.left},${margin.top})`);
+
+  // Bin by exposure 0-10
+  const bins = d3.range(0,11).map(i=>({exp:i,emp:0}));
+  jobs.forEach(j=>{ if(bins[j.exp]) bins[j.exp].emp+=j.emp; });
+
+  const x=d3.scaleBand().domain(bins.map(b=>b.exp)).range([0,iw]).padding(.15);
+  const y=d3.scaleLinear().domain([0,d3.max(bins,b=>b.emp)*1.1]).range([ih,0]);
+
+  g.selectAll(".bar").data(bins).enter().append("rect").attr("class","bar")
+    .attr("x",d=>x(d.exp)).attr("y",d=>y(d.emp)).attr("width",x.bandwidth())
+    .attr("height",d=>ih-y(d.emp)).attr("fill",d=>colorScale(d.exp)).attr("rx",3);
+
+  // Value labels on bars
+  g.selectAll(".bar-label").data(bins).enter().append("text")
+    .attr("x",d=>x(d.exp)+x.bandwidth()/2).attr("y",d=>y(d.emp)-5)
+    .attr("text-anchor","middle").attr("font-size","11px").attr("fill","#8b949e")
+    .text(d=>d.emp>0?d.emp.toLocaleString():"");
+
+  g.append("g").attr("class","axis").attr("transform",`translate(0,${ih})`).call(d3.axisBottom(x).tickFormat(d=>d));
+  g.append("g").attr("class","axis").call(d3.axisLeft(y).ticks(5).tickFormat(d=>d>=10000?(d/10000)+"亿":d+"万"));
+
+  // Axis labels
+  svg.append("text").attr("x",width/2).attr("y",height-4).attr("text-anchor","middle").attr("fill","#8b949e").attr("font-size","12px").text("AI冲击指数");
+  svg.append("text").attr("transform","rotate(-90)").attr("x",-height/2).attr("y",14).attr("text-anchor","middle").attr("fill","#8b949e").attr("font-size","12px").text("就业人数（万人）");
+}
+
+function renderTreemap(jobs){
+  const wrap=document.getElementById("treemap-wrap");
+  const width=Math.max(wrap.clientWidth, 600);
+  const height=Math.max(600, width*0.55);
+  const svg=d3.select("#treemap").attr("width",width).attr("height",height);
+
+  // Build hierarchy: root -> cat -> job
+  const nested = d3.group(jobs, d=>d.cat);
+  const rootData = {name:"root",children:[]};
+  for(const [cat,items] of nested){
+    rootData.children.push({name:cat, children:items.map(j=>({name:j.n,...j}))});
+  }
+
+  const root = d3.hierarchy(rootData).sum(d=>d.emp||0).sort((a,b)=>b.value-a.value);
+  d3.treemap().size([width,height]).padding(2).paddingTop(20).round(true)(root);
+
+  // Category group labels
+  const cats = svg.selectAll(".cat-group").data(root.children).enter().append("g");
+  cats.append("rect").attr("x",d=>d.x0).attr("y",d=>d.y0).attr("width",d=>d.x1-d.x0).attr("height",d=>d.y1-d.y0)
+    .attr("fill","none").attr("stroke",d=>colorScale(d3.mean(d.children,c=>c.data.exp)||5)).attr("stroke-opacity",.3);
+  cats.append("text").attr("x",d=>d.x0+4).attr("y",d=>d.y0+14).attr("fill","#8b949e").attr("font-size","10px").attr("font-weight","600")
+    .text(d=>{
+      const w=d.x1-d.x0;
+      const name=d.data.name;
+      return w>120?name:(w>60?name.slice(0,6)+"…":"");
+    });
+
+  // Leaf cells
+  const leaves = root.leaves();
+  const cell = svg.selectAll(".cell").data(leaves).enter().append("rect").attr("class","cell")
+    .attr("x",d=>d.x0).attr("y",d=>d.y0).attr("width",d=>d.x1-d.x0).attr("height",d=>d.y1-d.y0)
+    .attr("fill",d=>colorScale(d.data.exp)).attr("rx",2)
+    .on("mousemove",(event,d)=>showTooltip(d.data,event))
+    .on("mouseleave",hideTooltip);
+
+  // Labels for large enough cells
+  svg.selectAll(".cell-label").data(leaves.filter(d=>(d.x1-d.x0)>45&&(d.y1-d.y0)>18)).enter()
+    .append("text").attr("class","cell-label")
+    .attr("x",d=>(d.x0+d.x1)/2).attr("y",d=>(d.y0+d.y1)/2)
+    .text(d=>{
+      const w=d.x1-d.x0, name=d.data.n;
+      const maxChars=Math.floor(w/13);
+      return name.length>maxChars?name.slice(0,maxChars)+"…":name;
+    });
+}
+
+function renderScatter(jobs){
+  const margin={top:20,right:20,bottom:40,left:50};
+  const cardEl=document.querySelector("#scatter").parentElement;
+  const cs=getComputedStyle(cardEl);
+  const width=cardEl.clientWidth-parseFloat(cs.paddingLeft)-parseFloat(cs.paddingRight), height=300;
+  const iw=width-margin.left-margin.right, ih=height-margin.top-margin.bottom;
+
+  const svg=d3.select("#scatter").attr("width",width).attr("height",height);
+  const g=svg.append("g").attr("transform",`translate(${margin.left},${margin.top})`);
+
+  const x=d3.scaleLinear().domain([0,d3.max(jobs,d=>d.sal)+2]).range([0,iw]);
+  const y=d3.scaleLinear().domain([0,10.5]).range([ih,0]);
+  const r=d3.scaleSqrt().domain([0,d3.max(jobs,d=>d.emp)]).range([2,20]);
+
+  g.append("g").attr("class","axis").attr("transform",`translate(0,${ih})`).call(d3.axisBottom(x).ticks(6).tickFormat(d=>d+"K"));
+  g.append("g").attr("class","axis").call(d3.axisLeft(y).ticks(5));
+
+  g.selectAll(".dot").data(jobs).enter().append("circle").attr("class","dot")
+    .attr("cx",d=>x(d.sal)).attr("cy",d=>y(d.exp)).attr("r",d=>r(d.emp))
+    .attr("fill",d=>colorScale(d.exp)).attr("fill-opacity",.6).attr("stroke",d=>colorScale(d.exp)).attr("stroke-width",.5)
+    .on("mousemove",(event,d)=>{
+      showSimpleTooltip(`
+        <div class="tt-name">${d.n}</div>
+        <div class="tt-grid">
+          <span class="tt-label">月薪中位</span><span class="tt-val">${d.sal}K</span>
+          <span class="tt-label">AI冲击指数</span><span class="tt-val" style="color:${colorScale(d.exp)};font-weight:700">${d.exp}/10</span>
+          <span class="tt-label">从业人数</span><span class="tt-val">${d.emp} 万</span>
+        </div>`, event);
+    })
+    .on("mouseleave",hideTooltip);
+
+  svg.append("text").attr("x",width/2).attr("y",height-2).attr("text-anchor","middle").attr("fill","#8b949e").attr("font-size","11px").text("月薪中位数(千元)");
+  svg.append("text").attr("transform","rotate(-90)").attr("x",-height/2).attr("y",12).attr("text-anchor","middle").attr("fill","#8b949e").attr("font-size","11px").text("AI冲击指数");
+}
+
+function renderBoxplot(jobs){
+  const margin={top:20,right:20,bottom:60,left:50};
+  const cardEl=document.querySelector("#boxplot").parentElement;
+  const cs=getComputedStyle(cardEl);
+  const width=cardEl.clientWidth-parseFloat(cs.paddingLeft)-parseFloat(cs.paddingRight), height=300;
+  const iw=width-margin.left-margin.right, ih=height-margin.top-margin.bottom;
+
+  const svg=d3.select("#boxplot").attr("width",width).attr("height",height);
+  const g=svg.append("g").attr("transform",`translate(${margin.left},${margin.top})`);
+
+  const eduOrder=["初中及以下","高中/中专","大专","本科","硕士及以上"];
+  const grouped={};
+  eduOrder.forEach(e=>grouped[e]=[]);
+  jobs.forEach(j=>{ if(grouped[j.edu]) grouped[j.edu].push(j.exp); });
+
+  const x=d3.scaleBand().domain(eduOrder).range([0,iw]).padding(.3);
+  const y=d3.scaleLinear().domain([0,10.5]).range([ih,0]);
+
+  g.append("g").attr("class","axis").attr("transform",`translate(0,${ih})`).call(d3.axisBottom(x))
+    .selectAll("text").attr("transform","rotate(-20)").attr("text-anchor","end").attr("font-size","10px");
+  g.append("g").attr("class","axis").call(d3.axisLeft(y).ticks(5));
+
+  eduOrder.forEach(edu=>{
+    const vals=grouped[edu].sort(d3.ascending);
+    if(!vals.length) return;
+    const q1=d3.quantile(vals,.25), med=d3.quantile(vals,.5), q3=d3.quantile(vals,.75);
+    const iqr=q3-q1;
+    const lo=Math.max(d3.min(vals), q1-1.5*iqr);
+    const hi=Math.min(d3.max(vals), q3+1.5*iqr);
+    const cx=x(edu)+x.bandwidth()/2, bw=x.bandwidth();
+
+    // Whiskers
+    g.append("line").attr("x1",cx).attr("x2",cx).attr("y1",y(lo)).attr("y2",y(hi)).attr("stroke","#8b949e").attr("stroke-width",1);
+    g.append("line").attr("x1",cx-bw*.3).attr("x2",cx+bw*.3).attr("y1",y(lo)).attr("y2",y(lo)).attr("stroke","#8b949e");
+    g.append("line").attr("x1",cx-bw*.3).attr("x2",cx+bw*.3).attr("y1",y(hi)).attr("y2",y(hi)).attr("stroke","#8b949e");
+
+    // Box
+    g.append("rect").attr("x",x(edu)).attr("y",y(q3)).attr("width",bw).attr("height",y(q1)-y(q3))
+      .attr("fill",colorScale(med)).attr("fill-opacity",.4).attr("stroke",colorScale(med)).attr("stroke-width",1.5).attr("rx",3);
+
+    // Median
+    g.append("line").attr("x1",x(edu)).attr("x2",x(edu)+bw).attr("y1",y(med)).attr("y2",y(med)).attr("stroke","#fff").attr("stroke-width",2);
+
+    // Hover zone (covers whiskers + box)
+    g.append("rect").attr("x",x(edu)).attr("y",y(hi)).attr("width",bw).attr("height",y(lo)-y(hi))
+      .attr("fill","transparent").attr("cursor","pointer")
+      .on("mousemove",(event)=>{
+        showSimpleTooltip(`
+          <div class="tt-name">${edu}</div>
+          <div class="tt-grid">
+            <span class="tt-label">职业数量</span><span class="tt-val">${vals.length}</span>
+            <span class="tt-label">最高值</span><span class="tt-val">${hi}</span>
+            <span class="tt-label">Q3</span><span class="tt-val">${q3}</span>
+            <span class="tt-label">中位数</span><span class="tt-val" style="color:${colorScale(med)};font-weight:700">${med}</span>
+            <span class="tt-label">Q1</span><span class="tt-val">${q1}</span>
+            <span class="tt-label">最低值</span><span class="tt-val">${lo}</span>
+          </div>`, event);
+      })
+      .on("mouseleave",hideTooltip);
+  });
+
+  svg.append("text").attr("transform","rotate(-90)").attr("x",-height/2).attr("y",12).attr("text-anchor","middle").attr("fill","#8b949e").attr("font-size","11px").text("AI冲击指数");
+}
+
+function renderCatTable(categories){
+  const tbody=document.getElementById("cat-tbody");
+  const maxExp=d3.max(categories,c=>c.avg_exp)||10;
+  categories.forEach(c=>{
+    const pct=(c.avg_exp/10*100).toFixed(0);
+    const tr=document.createElement("tr");
+    tr.innerHTML=`
+      <td>${c.name}</td>
+      <td>${c.count}</td>
+      <td>${c.emp.toLocaleString()}</td>
+      <td style="color:${colorScale(c.avg_exp)};font-weight:600">${c.avg_exp}</td>
+      <td class="bar-cell"><div class="mini-bar"><div class="mini-bar-fill" style="width:${pct}%;background:${colorScale(c.avg_exp)}"></div></div></td>`;
+    tbody.appendChild(tr);
+  });
+}
+</script>
+</body>
+</html>
