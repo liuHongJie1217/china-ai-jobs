@@ -316,15 +316,25 @@ function renderHistogram(jobs){
   const g=svg.append("g").attr("transform",`translate(${margin.left},${margin.top})`);
 
   // Bin by exposure 0-10
-  const bins = d3.range(0,11).map(i=>({exp:i,emp:0}));
-  jobs.forEach(j=>{ if(bins[j.exp]) bins[j.exp].emp+=j.emp; });
+  const bins = d3.range(0,11).map(i=>({exp:i,emp:0,cnt:0}));
+  jobs.forEach(j=>{ if(bins[j.exp]){ bins[j.exp].emp+=j.emp; bins[j.exp].cnt++; } });
 
   const x=d3.scaleBand().domain(bins.map(b=>b.exp)).range([0,iw]).padding(.15);
   const y=d3.scaleLinear().domain([0,d3.max(bins,b=>b.emp)*1.1]).range([ih,0]);
 
   g.selectAll(".bar").data(bins).enter().append("rect").attr("class","bar")
     .attr("x",d=>x(d.exp)).attr("y",d=>y(d.emp)).attr("width",x.bandwidth())
-    .attr("height",d=>ih-y(d.emp)).attr("fill",d=>colorScale(d.exp)).attr("rx",3);
+    .attr("height",d=>ih-y(d.emp)).attr("fill",d=>colorScale(d.exp)).attr("rx",3)
+    .on("mousemove",(event,d)=>{
+      if(!d.cnt) return;
+      showSimpleTooltip(`
+        <div class="tt-name">AI冲击指数: ${d.exp} 分</div>
+        <div class="tt-grid">
+          <span class="tt-label">职业数量</span><span class="tt-val">${d.cnt} 个</span>
+          <span class="tt-label">涉及就业人数</span><span class="tt-val">${d.emp.toLocaleString()} 万人</span>
+        </div>`, event);
+    })
+    .on("mouseleave",hideTooltip);
 
   // Value labels on bars
   g.selectAll(".bar-label").data(bins).enter().append("text")
