@@ -31,6 +31,14 @@ header .desc span{margin:0 4px}
 .search-wrap input{width:100%;padding:12px 16px 12px 42px;border-radius:8px;border:1px solid var(--border);background:var(--card);color:var(--text);font-size:1em;outline:none;transition:border-color .2s}
 .search-wrap input:focus{border-color:var(--accent)}
 .search-wrap .icon{position:absolute;left:14px;top:50%;transform:translateY(-50%);color:var(--text2);font-size:1.1em;pointer-events:none}
+.search-dropdown{display:none;position:absolute;top:100%;left:0;right:0;margin-top:4px;background:var(--card);border:1px solid var(--border);border-radius:8px;overflow:hidden;z-index:1000;box-shadow:0 8px 24px rgba(0,0,0,.4)}
+.search-dropdown.open{display:block}
+.search-dropdown .sr-item{display:flex;align-items:center;gap:10px;padding:10px 16px;cursor:pointer;border-bottom:1px solid var(--border);transition:background .15s}
+.search-dropdown .sr-item:last-child{border-bottom:none}
+.search-dropdown .sr-item:hover{background:rgba(255,255,255,.06)}
+.search-dropdown .sr-name{flex:1;font-size:.95em;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.search-dropdown .sr-badge{display:inline-block;padding:2px 8px;border-radius:4px;font-size:.8em;font-weight:600;color:#fff;min-width:28px;text-align:center}
+.search-dropdown .sr-meta{font-size:.8em;color:var(--text2);white-space:nowrap}
 
 /* Stats */
 .stats{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin:32px auto;max-width:800px}
@@ -138,7 +146,8 @@ footer .method{max-width:700px;margin:0 auto 16px;text-align:left}
   </div>
   <div class="search-wrap">
     <span class="icon">🔍</span>
-    <input id="search" type="text" placeholder="搜索你的职业...">
+    <input id="search" type="text" placeholder="搜索你的职业..." autocomplete="off">
+    <div id="search-dropdown" class="search-dropdown"></div>
   </div>
 </header>
 
@@ -287,17 +296,62 @@ d3.json("data.json").then(data => {
 
   // ======== SEARCH ========
   const searchInput = document.getElementById("search");
-  searchInput.addEventListener("input", () => {
+  const dropdown = document.getElementById("search-dropdown");
+
+  function updateSearch(){
     const q = searchInput.value.trim().toLowerCase();
     const cells = d3.selectAll("#treemap .cell");
+    // Treemap highlight
     if(!q){
       cells.classed("dimmed",false).classed("highlight",false);
+      dropdown.classList.remove("open");
+      dropdown.innerHTML="";
       return;
     }
     cells.each(function(d){
       const match = d.data.n.toLowerCase().includes(q) || d.data.sub.toLowerCase().includes(q);
       d3.select(this).classed("dimmed",!match).classed("highlight",match);
     });
+    // Dropdown results
+    const matches = jobs.filter(j=>j.n.toLowerCase().includes(q)||j.sub.toLowerCase().includes(q)).slice(0,10);
+    if(!matches.length){ dropdown.classList.remove("open"); dropdown.innerHTML=""; return; }
+    dropdown.innerHTML = matches.map(j=>{
+      const empStr = j.emp>=10000? (j.emp/10000).toFixed(1)+"亿" : j.emp.toLocaleString()+"万";
+      return `<div class="sr-item" data-code="${j.c}">
+        <span class="sr-name">${j.n}</span>
+        <span class="sr-badge" style="background:${colorScale(j.exp)}">${j.exp}</span>
+        <span class="sr-meta">${empStr}人</span>
+        <span class="sr-meta">${j.sal}K/月</span>
+      </div>`;
+    }).join("");
+    dropdown.classList.add("open");
+  }
+
+  searchInput.addEventListener("input", updateSearch);
+
+  // Click dropdown item → scroll to treemap cell and highlight
+  dropdown.addEventListener("click", (e)=>{
+    const item = e.target.closest(".sr-item");
+    if(!item) return;
+    const code = item.dataset.code;
+    // Highlight only this cell in treemap
+    const cells = d3.selectAll("#treemap .cell");
+    cells.classed("dimmed",true).classed("highlight",false);
+    cells.each(function(d){
+      if(d.data.c===code) d3.select(this).classed("dimmed",false).classed("highlight",true);
+    });
+    // Scroll treemap into view
+    document.getElementById("treemap-wrap").scrollIntoView({behavior:"smooth",block:"center"});
+    dropdown.classList.remove("open");
+  });
+
+  // Close dropdown on outside click
+  document.addEventListener("click",(e)=>{
+    if(!e.target.closest(".search-wrap")) dropdown.classList.remove("open");
+  });
+  // Reopen on focus if there's a query
+  searchInput.addEventListener("focus",()=>{
+    if(searchInput.value.trim()) updateSearch();
   });
 }).catch(err => {
   console.error("Data load failed:", err);
