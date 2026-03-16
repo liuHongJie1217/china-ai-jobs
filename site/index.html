@@ -430,6 +430,9 @@ function renderHistogram(jobs){
       const h=d.emp>0?Math.max(rawH,MIN_BAR_H):0;
       d3.select(this).attr("height",h).attr("y",ih-h);
     });
+  // Value labels on bars
+  const mobile = isMobile();
+
   // Attach tooltip to the group — tap on mobile, hover on desktop
   const histTip = (event,d) => {
     if(!d.cnt) return;
@@ -445,9 +448,6 @@ function renderHistogram(jobs){
   } else {
     barG.on("mousemove",histTip).on("mouseleave",hideTooltip);
   }
-
-  // Value labels on bars
-  const mobile = isMobile();
   const labelSize = mobile ? "9px" : "11px";
   g.selectAll(".bar-label").data(bins).enter().append("text")
     .attr("x",d=>x(d.exp)+x.bandwidth()/2)
