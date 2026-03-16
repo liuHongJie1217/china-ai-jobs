@@ -69,8 +69,9 @@ header .desc span{margin:0 4px}
 
 /* Histogram */
 #histogram{width:100%;height:280px}
-#histogram .bar{cursor:pointer;transition:opacity .2s}
-#histogram .bar:hover{opacity:.8}
+#histogram .bar{transition:opacity .2s}
+#histogram .bar-group{cursor:pointer}
+#histogram .bar-group:hover .bar{opacity:.8}
 #histogram text{fill:var(--text2);font-size:12px}
 #histogram .axis line,#histogram .axis path{stroke:var(--border)}
 
@@ -322,10 +323,23 @@ function renderHistogram(jobs){
   const x=d3.scaleBand().domain(bins.map(b=>b.exp)).range([0,iw]).padding(.15);
   const y=d3.scaleLinear().domain([0,d3.max(bins,b=>b.emp)*1.1]).range([ih,0]);
 
-  g.selectAll(".bar").data(bins).enter().append("rect").attr("class","bar")
-    .attr("x",d=>x(d.exp)).attr("y",d=>y(d.emp)).attr("width",x.bandwidth())
-    .attr("height",d=>ih-y(d.emp)).attr("fill",d=>colorScale(d.exp)).attr("rx",3)
-    .on("mousemove",(event,d)=>{
+  const MIN_BAR_H=20;
+  const barG=g.selectAll(".bar-group").data(bins).enter().append("g").attr("class","bar-group");
+  // Transparent hover hitzone extending from chart top to bar bottom
+  barG.append("rect").attr("class","bar-hitzone")
+    .attr("x",d=>x(d.exp)).attr("y",0).attr("width",x.bandwidth())
+    .attr("height",ih).attr("fill","transparent").style("cursor","pointer");
+  // Visible bar with minimum height
+  barG.append("rect").attr("class","bar")
+    .attr("x",d=>x(d.exp)).attr("width",x.bandwidth()).attr("rx",3)
+    .attr("fill",d=>colorScale(d.exp))
+    .each(function(d){
+      const rawH=ih-y(d.emp);
+      const h=d.emp>0?Math.max(rawH,MIN_BAR_H):0;
+      d3.select(this).attr("height",h).attr("y",ih-h);
+    });
+  // Attach tooltip to the group so both hitzone and bar trigger it
+  barG.on("mousemove",(event,d)=>{
       if(!d.cnt) return;
       showSimpleTooltip(`
         <div class="tt-name">AI冲击指数: ${d.exp} 分</div>
@@ -338,7 +352,8 @@ function renderHistogram(jobs){
 
   // Value labels on bars
   g.selectAll(".bar-label").data(bins).enter().append("text")
-    .attr("x",d=>x(d.exp)+x.bandwidth()/2).attr("y",d=>y(d.emp)-5)
+    .attr("x",d=>x(d.exp)+x.bandwidth()/2)
+    .attr("y",d=>{const rawH=ih-y(d.emp);const h=d.emp>0?Math.max(rawH,MIN_BAR_H):0;return ih-h-5;})
     .attr("text-anchor","middle").attr("font-size","11px").attr("fill","#8b949e")
     .text(d=>d.emp>0?d.emp.toLocaleString():"");
 
