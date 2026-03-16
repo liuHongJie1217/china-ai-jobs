@@ -4,7 +4,7 @@ How exposed is every occupation in China's economy to AI and automation?
 
 This project scores **394 occupations** from China's National Occupational Classification Dictionary (2022 edition) on their AI exposure (0–10), and visualizes the results as an interactive treemap where **area = employment** and **color = AI exposure**.
 
-**[Live Demo →](https://liuhongjie1217.github.io/china-ai-jobs/)** · Inspired by [@karpathy/jobs](https://github.com/karpathy/jobs)
+**[Live Demo →](https://china-ai-jobs.pages.dev/)** · Inspired by [@karpathy/jobs](https://github.com/karpathy/jobs)
 
 ---
 

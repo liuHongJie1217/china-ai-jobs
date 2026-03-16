@@ -93,7 +93,7 @@ Andrej Karpathy——前特斯拉 AI 总监、OpenAI 联合创始人——最近
 
 欢迎在评论区告诉我：**你的职业评分是多少？你觉得准吗？**
 
-📊 交互式可视化：https://liuhongjie1217.github.io/china-ai-jobs/
+📊 交互式可视化：https://china-ai-jobs.pages.dev/
 💻 GitHub（完整数据+代码）：https://github.com/liuHongJie1217/china-ai-jobs
 📖 方法论详情见 GitHub README
 
