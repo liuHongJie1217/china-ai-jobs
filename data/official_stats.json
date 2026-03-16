@@ -1,0 +1,298 @@
+{
+  "source": "国家统计局2024年数据",
+  "salary_source": "2024年城镇单位就业人员年平均工资情况（表7：规模以上企业分行业门类分岗位）",
+  "salary_url": "https://www.stats.gov.cn/sj/zxfb/202505/t20250516_1959826.html",
+  "employment_source": "中华人民共和国2024年国民经济和社会发展统计公报 + 中国统计年鉴2024",
+  "employment_url": "https://www.stats.gov.cn/sj/zxfb/202502/t20250228_1958817.html",
+  "notes": {
+    "salary_unit": "元/年（年平均工资）",
+    "employment_unit": "万人",
+    "total_employment_2024": 73439,
+    "primary_industry": 16200,
+    "secondary_industry": 21100,
+    "tertiary_industry": 36139,
+    "salary_missing_note": "农林牧渔、金融业、公共管理3个行业不在规模以上企业调查范围内，工资数据为基于非私营/私营单位数据的估算值"
+  },
+  "job_position_types": [
+    "management",
+    "professional",
+    "clerical",
+    "service",
+    "production"
+  ],
+  "job_position_labels": {
+    "management": "中层及以上管理人员",
+    "professional": "专业技术人员",
+    "clerical": "办事人员和有关人员",
+    "service": "社会生产服务和生活服务人员",
+    "production": "生产制造及有关人员"
+  },
+  "industries": [
+    {
+      "id": "agriculture",
+      "name": "农、林、牧、渔业",
+      "employment_wan": 16200,
+      "sector": "primary",
+      "salary_estimated": true,
+      "salary": {
+        "management": 120000,
+        "professional": 85000,
+        "clerical": 58000,
+        "service": 48000,
+        "production": 46000
+      }
+    },
+    {
+      "id": "mining",
+      "name": "采矿业",
+      "employment_wan": 360,
+      "sector": "secondary",
+      "salary_estimated": false,
+      "salary": {
+        "management": 249123,
+        "professional": 168042,
+        "clerical": 140904,
+        "service": 86298,
+        "production": 118104
+      }
+    },
+    {
+      "id": "manufacturing",
+      "name": "制造业",
+      "employment_wan": 15090,
+      "sector": "secondary",
+      "salary_estimated": false,
+      "salary": {
+        "management": 191650,
+        "professional": 140536,
+        "clerical": 99343,
+        "service": 97572,
+        "production": 76940
+      }
+    },
+    {
+      "id": "utilities",
+      "name": "电力、热力、燃气及水生产和供应业",
+      "employment_wan": 450,
+      "sector": "secondary",
+      "salary_estimated": false,
+      "salary": {
+        "management": 253850,
+        "professional": 179605,
+        "clerical": 128772,
+        "service": 114435,
+        "production": 140007
+      }
+    },
+    {
+      "id": "construction",
+      "name": "建筑业",
+      "employment_wan": 5200,
+      "sector": "secondary",
+      "salary_estimated": false,
+      "salary": {
+        "management": 130730,
+        "professional": 93105,
+        "clerical": 66919,
+        "service": 62463,
+        "production": 69199
+      }
+    },
+    {
+      "id": "wholesale_retail",
+      "name": "批发和零售业",
+      "employment_wan": 13200,
+      "sector": "tertiary",
+      "salary_estimated": false,
+      "salary": {
+        "management": 202457,
+        "professional": 136449,
+        "clerical": 94250,
+        "service": 81075,
+        "production": 70171
+      }
+    },
+    {
+      "id": "transport",
+      "name": "交通运输、仓储和邮政业",
+      "employment_wan": 2600,
+      "sector": "tertiary",
+      "salary_estimated": false,
+      "salary": {
+        "management": 230585,
+        "professional": 179801,
+        "clerical": 101660,
+        "service": 112883,
+        "production": 97085
+      }
+    },
+    {
+      "id": "hospitality",
+      "name": "住宿和餐饮业",
+      "employment_wan": 3600,
+      "sector": "tertiary",
+      "salary_estimated": false,
+      "salary": {
+        "management": 108708,
+        "professional": 68646,
+        "clerical": 56939,
+        "service": 49997,
+        "production": 48854
+      }
+    },
+    {
+      "id": "ict",
+      "name": "信息传输、软件和信息技术服务业",
+      "employment_wan": 900,
+      "sector": "tertiary",
+      "salary_estimated": false,
+      "salary": {
+        "management": 461067,
+        "professional": 266974,
+        "clerical": 152787,
+        "service": 159796,
+        "production": 103705
+      }
+    },
+    {
+      "id": "finance",
+      "name": "金融业",
+      "employment_wan": 880,
+      "sector": "tertiary",
+      "salary_estimated": true,
+      "salary": {
+        "management": 420000,
+        "professional": 280000,
+        "clerical": 155000,
+        "service": 125000,
+        "production": 98000
+      }
+    },
+    {
+      "id": "real_estate",
+      "name": "房地产业",
+      "employment_wan": 450,
+      "sector": "tertiary",
+      "salary_estimated": false,
+      "salary": {
+        "management": 186931,
+        "professional": 114049,
+        "clerical": 82225,
+        "service": 55464,
+        "production": 65673
+      }
+    },
+    {
+      "id": "leasing_business",
+      "name": "租赁和商务服务业",
+      "employment_wan": 1800,
+      "sector": "tertiary",
+      "salary_estimated": false,
+      "salary": {
+        "management": 291329,
+        "professional": 146240,
+        "clerical": 89527,
+        "service": 66906,
+        "production": 73186
+      }
+    },
+    {
+      "id": "research",
+      "name": "科学研究和技术服务业",
+      "employment_wan": 600,
+      "sector": "tertiary",
+      "salary_estimated": false,
+      "salary": {
+        "management": 312732,
+        "professional": 169318,
+        "clerical": 119223,
+        "service": 114695,
+        "production": 106139
+      }
+    },
+    {
+      "id": "water_environment",
+      "name": "水利、环境和公共设施管理业",
+      "employment_wan": 480,
+      "sector": "tertiary",
+      "salary_estimated": false,
+      "salary": {
+        "management": 179553,
+        "professional": 118484,
+        "clerical": 71637,
+        "service": 40110,
+        "production": 61885
+      }
+    },
+    {
+      "id": "resident_services",
+      "name": "居民服务、修理和其他服务业",
+      "employment_wan": 5039,
+      "sector": "tertiary",
+      "salary_estimated": false,
+      "salary": {
+        "management": 126634,
+        "professional": 94584,
+        "clerical": 69178,
+        "service": 48642,
+        "production": 57349
+      }
+    },
+    {
+      "id": "education",
+      "name": "教育",
+      "employment_wan": 2400,
+      "sector": "tertiary",
+      "salary_estimated": false,
+      "salary": {
+        "management": 196577,
+        "professional": 117794,
+        "clerical": 93560,
+        "service": 90770,
+        "production": 73691
+      }
+    },
+    {
+      "id": "health",
+      "name": "卫生和社会工作",
+      "employment_wan": 1300,
+      "sector": "tertiary",
+      "salary_estimated": false,
+      "salary": {
+        "management": 192897,
+        "professional": 112032,
+        "clerical": 84911,
+        "service": 68841,
+        "production": 81033
+      }
+    },
+    {
+      "id": "culture_sports",
+      "name": "文化、体育和娱乐业",
+      "employment_wan": 430,
+      "sector": "tertiary",
+      "salary_estimated": false,
+      "salary": {
+        "management": 231098,
+        "professional": 186941,
+        "clerical": 96369,
+        "service": 70392,
+        "production": 64000
+      }
+    },
+    {
+      "id": "public_admin",
+      "name": "公共管理、社会保障和社会组织",
+      "employment_wan": 2460,
+      "sector": "tertiary",
+      "salary_estimated": true,
+      "salary": {
+        "management": 195000,
+        "professional": 135000,
+        "clerical": 100000,
+        "service": 75000,
+        "production": 70000
+      }
+    }
+  ]
+}
