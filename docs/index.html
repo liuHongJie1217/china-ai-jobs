@@ -66,7 +66,7 @@ header .desc span{margin:0 4px}
 
 /* Tooltip */
 .tooltip{position:fixed;pointer-events:none;background:var(--card);border:1px solid var(--border);border-radius:10px;padding:16px;width:320px;box-shadow:0 8px 30px rgba(0,0,0,.5);z-index:999;font-size:.9em;opacity:0;transition:opacity .15s}
-.tooltip.show{opacity:1}
+.tooltip.show{opacity:1;pointer-events:auto}
 .tooltip .tt-name{font-size:1.15em;font-weight:700;margin-bottom:8px}
 .tooltip .tt-bar-wrap{background:#21262d;border-radius:4px;height:8px;margin:6px 0 10px;overflow:hidden}
 .tooltip .tt-bar{height:100%;border-radius:4px;transition:width .3s}
@@ -142,7 +142,7 @@ footer .method{max-width:700px;margin:0 auto 16px;text-align:left}
     <span>394个职业</span> · <span>面积 = 就业人数</span> · <span>颜色 = AI冲击指数</span>
   </div>
   <div class="desc" style="margin-top:6px">
-    数据: 中国职业分类大典(2022) · 国家统计局2024年数据 | 评分: Claude (Anthropic) | 灵感: <a href="https://karpathy.ai/jobs/" target="_blank">karpathy.ai/jobs</a> | <a href="https://github.com/liuHongJie1217/china-ai-jobs" target="_blank">GitHub</a>
+    数据: <a href="http://www.mohrss.gov.cn/SYrlzyhshbzb/zwgk/zyzk/" target="_blank" rel="noopener noreferrer">中国职业分类大典(2022)</a> · <a href="https://www.stats.gov.cn/sj/zxfb/202505/t20250516_1959826.html" target="_blank" rel="noopener noreferrer">国家统计局2024年工资数据</a> · <a href="https://www.stats.gov.cn/sj/zxfb/202602/t20260228_1962662.html" target="_blank" rel="noopener noreferrer">2025年统计公报</a> | 评分: <a href="https://www.anthropic.com" target="_blank" rel="noopener noreferrer">Claude (Anthropic)</a> | 灵感: <a href="https://karpathy.ai/jobs/" target="_blank" rel="noopener noreferrer">karpathy.ai/jobs</a> | <a href="https://github.com/liuHongJie1217/china-ai-jobs" target="_blank" rel="noopener noreferrer">GitHub</a>
   </div>
   <div class="search-wrap">
     <span class="icon">🔍</span>
@@ -203,7 +203,7 @@ footer .method{max-width:700px;margin:0 auto 16px;text-align:left}
 
 <footer>
   <div class="method">
-    <strong>方法论</strong>：数据来源：中国职业分类大典(2022版)、国家统计局2025年统计公报（就业总量）、2024年城镇单位就业人员平均工资数据（分行业×分岗位）。AI冲击评分由 Claude (Anthropic) 生成。评分综合考量当前AI技术能力、任务可替代性、中国特有制度与市场因素。本图谱仅供参考，不构成任何职业建议。
+    <strong>方法论</strong>：数据来源：<a href="http://www.mohrss.gov.cn/SYrlzyhshbzb/zwgk/zyzk/" target="_blank" rel="noopener noreferrer">中国职业分类大典(2022版)</a>、国家统计局<a href="https://www.stats.gov.cn/sj/zxfb/202505/t20250516_1959826.html" target="_blank" rel="noopener noreferrer">《2024年城镇单位就业人员年平均工资》</a>（分行业×分岗位）、<a href="https://www.stats.gov.cn/sj/zxfb/202602/t20260228_1962662.html" target="_blank" rel="noopener noreferrer">《2025年国民经济和社会发展统计公报》</a>（就业总量）、<a href="https://www.stats.gov.cn/sj/ndsj/2025/indexch.htm" target="_blank" rel="noopener noreferrer">《中国统计年鉴2025》</a>。AI冲击评分由 Claude (Anthropic) 生成。评分综合考量当前AI技术能力、任务可替代性、中国特有制度与市场因素。本图谱仅供参考，不构成任何职业建议。
   </div>
   灵感来源: <a href="https://karpathy.ai/jobs/" target="_blank">Andrej Karpathy - Jobs</a>
 </footer>
@@ -243,7 +243,8 @@ function showTooltip(d, event){
       <span class="tt-label">学历要求</span><span class="tt-val">${d.edu}</span>
       <span class="tt-label">中国因素</span><span class="tt-val">${d.cf}</span>
     </div>
-    <div class="tt-rationale">${d.ra}</div>`;
+    <div class="tt-rationale">${d.ra}</div>
+    <div style="margin-top:8px;font-size:.78em;color:var(--text2)">ⓘ 薪资为行业×岗位统计均值，实际薪资因地区、企业差异较大，建议参考BOSS直聘、智联招聘等平台的实时数据。数据来源：<a href="https://www.stats.gov.cn/sj/zxfb/202505/t20250516_1959826.html" target="_blank" rel="noopener noreferrer" style="color:var(--accent);pointer-events:auto">国家统计局</a></div>`;
   tooltip.classList.add("show");
   positionTooltip(event);
 }
