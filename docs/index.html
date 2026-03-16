@@ -107,27 +107,42 @@ header .desc span{margin:0 4px}
 footer{border-top:1px solid var(--border);padding:32px 20px;margin-top:40px;text-align:center;color:var(--text2);font-size:.85em;line-height:1.8}
 footer .method{max-width:700px;margin:0 auto 16px;text-align:left}
 
+/* Mobile bottom-card tooltip overlay */
+.tooltip-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:998}
+.tooltip-overlay.show{display:block}
+
 /* Responsive */
 @media(max-width:768px){
   header{padding:32px 12px 20px}
   header h1{font-size:1.5em;letter-spacing:0}
   header .subtitle{font-size:.9em}
-  header .desc{font-size:.78em}
+  header .desc{font-size:.78em;line-height:1.6}
   .container{padding:0 12px;overflow-x:hidden}
-  .stats{grid-template-columns:1fr;gap:10px;max-width:100%}
-  .stat-card{padding:14px 16px}
-  .stat-card .value{font-size:1.8em}
+  .stats{grid-template-columns:repeat(3,1fr);gap:8px;max-width:100%}
+  .stat-card{padding:10px 6px}
+  .stat-card .value{font-size:1.4em}
+  .stat-card .label{font-size:.7em}
   .section-title{font-size:1.1em;margin:28px 0 12px}
-  #histogram{height:220px}
-  #treemap-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch}
-  #treemap{min-width:600px}
+  #histogram{height:200px}
+  #histogram text{font-size:10px}
+  #treemap-wrap{overflow-x:hidden}
+  #treemap{min-width:0!important}
+  #treemap .cell-label{font-size:9px}
   .charts-row{grid-template-columns:1fr;gap:16px}
   .chart-card{padding:14px}
-  .tooltip{width:260px;font-size:.8em;max-width:90vw}
+  /* Mobile tooltip → bottom card */
+  .tooltip{position:fixed;bottom:0;left:0;right:0;top:auto!important;width:100%!important;max-width:100%!important;max-height:60vh;overflow-y:auto;border-radius:16px 16px 0 0;padding:20px 16px calc(env(safe-area-inset-bottom,0px) + 16px);font-size:.85em;transform:translateY(100%);opacity:1;transition:transform .25s ease}
+  .tooltip.show{transform:translateY(0);opacity:1}
+  /* Search dropdown mobile */
+  .search-dropdown{max-height:50vh;overflow-y:auto}
+  .search-dropdown .sr-item{flex-wrap:wrap;gap:6px 10px}
+  .search-dropdown .sr-name{min-width:0;flex-basis:100%}
+  /* Category table mobile */
   .cat-table-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch}
-  .cat-table{font-size:.78em;min-width:500px}
-  .cat-table th,.cat-table td{padding:8px 10px}
-  .cat-table .bar-cell{width:80px}
+  .cat-table{font-size:.78em;min-width:0}
+  .cat-table th,.cat-table td{padding:8px 10px;white-space:nowrap}
+  .cat-table .bar-cell{display:none}
+  .cat-table th:last-child{display:none}
   footer{padding:24px 12px;font-size:.78em}
   footer .method{font-size:.75em}
 }
@@ -199,6 +214,7 @@ footer .method{max-width:700px;margin:0 auto 16px;text-align:left}
 </div>
 
 <!-- Tooltip -->
+<div class="tooltip-overlay" id="tooltip-overlay"></div>
 <div class="tooltip" id="tooltip"></div>
 
 <footer>
@@ -226,6 +242,9 @@ const tlLabels = {"1-3y":"1-3年","3-5y":"3-5年","5-10y":"5-10年","10y+":"10�
 
 // --- Tooltip ---
 const tooltip = document.getElementById("tooltip");
+const tooltipOverlay = document.getElementById("tooltip-overlay");
+const isMobile = () => window.innerWidth <= 768;
+
 function showTooltip(d, event){
   const rt = rtLabels[d.rt]||d.rt;
   const tl = tlLabels[d.tl]||d.tl;
@@ -246,9 +265,14 @@ function showTooltip(d, event){
     <div class="tt-rationale">${d.ra}</div>
     <div style="margin-top:8px;font-size:.78em;color:var(--text2)">ⓘ 薪资为行业×岗位统计均值，实际薪资因地区、企业差异较大，建议参考BOSS直聘、智联招聘等平台的实时数据。数据来源：<a href="https://www.stats.gov.cn/sj/zxfb/202505/t20250516_1959826.html" target="_blank" rel="noopener noreferrer" style="color:var(--accent);pointer-events:auto">国家统计局</a></div>`;
   tooltip.classList.add("show");
-  positionTooltip(event);
+  if(isMobile()){
+    tooltipOverlay.classList.add("show");
+  } else {
+    positionTooltip(event);
+  }
 }
 function positionTooltip(e){
+  if(isMobile()) return; // bottom card, no positioning needed
   const tw=320,th=tooltip.offsetHeight,pad=16;
   let x=e.clientX+pad, y=e.clientY+pad;
   if(x+tw>window.innerWidth) x=e.clientX-tw-pad;
@@ -256,12 +280,25 @@ function positionTooltip(e){
   tooltip.style.left=x+"px";
   tooltip.style.top=y+"px";
 }
-function hideTooltip(){tooltip.classList.remove("show")}
+function hideTooltip(){
+  tooltip.classList.remove("show");
+  tooltipOverlay.classList.remove("show");
+}
 function showSimpleTooltip(html, event){
   tooltip.innerHTML = html;
   tooltip.classList.add("show");
-  positionTooltip(event);
+  if(isMobile()){
+    tooltipOverlay.classList.add("show");
+  } else {
+    positionTooltip(event);
+  }
 }
+// Tap overlay to dismiss on mobile
+tooltipOverlay.addEventListener("click", hideTooltip);
+// Also allow tapping the tooltip itself to dismiss on mobile
+tooltip.addEventListener("click", (e)=>{
+  if(isMobile() && !e.target.closest("a")) hideTooltip();
+});
 
 // --- Error display ---
 function showError(msg){
@@ -393,37 +430,51 @@ function renderHistogram(jobs){
       const h=d.emp>0?Math.max(rawH,MIN_BAR_H):0;
       d3.select(this).attr("height",h).attr("y",ih-h);
     });
-  // Attach tooltip to the group so both hitzone and bar trigger it
-  barG.on("mousemove",(event,d)=>{
-      if(!d.cnt) return;
-      showSimpleTooltip(`
-        <div class="tt-name">AI冲击指数: ${d.exp} 分</div>
-        <div class="tt-grid">
-          <span class="tt-label">职业数量</span><span class="tt-val">${d.cnt} 个</span>
-          <span class="tt-label">涉及就业人数</span><span class="tt-val">${d.emp.toLocaleString()} 万人</span>
-        </div>`, event);
-    })
-    .on("mouseleave",hideTooltip);
+  // Attach tooltip to the group — tap on mobile, hover on desktop
+  const histTip = (event,d) => {
+    if(!d.cnt) return;
+    showSimpleTooltip(`
+      <div class="tt-name">AI冲击指数: ${d.exp} 分</div>
+      <div class="tt-grid">
+        <span class="tt-label">职业数量</span><span class="tt-val">${d.cnt} 个</span>
+        <span class="tt-label">涉及就业人数</span><span class="tt-val">${d.emp.toLocaleString()} 万人</span>
+      </div>`, event);
+  };
+  if(mobile){
+    barG.on("click",(event,d)=>{event.stopPropagation();histTip(event,d);});
+  } else {
+    barG.on("mousemove",histTip).on("mouseleave",hideTooltip);
+  }
 
   // Value labels on bars
+  const mobile = isMobile();
+  const labelSize = mobile ? "9px" : "11px";
   g.selectAll(".bar-label").data(bins).enter().append("text")
     .attr("x",d=>x(d.exp)+x.bandwidth()/2)
     .attr("y",d=>{const rawH=ih-y(d.emp);const h=d.emp>0?Math.max(rawH,MIN_BAR_H):0;return ih-h-5;})
-    .attr("text-anchor","middle").attr("font-size","11px").attr("fill","#8b949e")
-    .text(d=>d.emp>0?d.emp.toLocaleString():"");
+    .attr("text-anchor","middle").attr("font-size",labelSize).attr("fill","#8b949e")
+    .text(d=>{
+      if(!d.emp) return "";
+      // Shorten labels on mobile to avoid overlap
+      if(mobile && d.emp>=10000) return (d.emp/10000).toFixed(1)+"亿";
+      if(mobile) return d.emp>=1000?(d.emp/1000).toFixed(0)+"k":d.emp;
+      return d.emp.toLocaleString();
+    });
 
   g.append("g").attr("class","axis").attr("transform",`translate(0,${ih})`).call(d3.axisBottom(x).tickFormat(d=>d));
-  g.append("g").attr("class","axis").call(d3.axisLeft(y).ticks(5).tickFormat(d=>d>=10000?(d/10000)+"亿":d+"万"));
+  g.append("g").attr("class","axis").call(d3.axisLeft(y).ticks(mobile?3:5).tickFormat(d=>d>=10000?(d/10000)+"亿":d+"万"));
 
   // Axis labels
-  svg.append("text").attr("x",width/2).attr("y",height-4).attr("text-anchor","middle").attr("fill","#8b949e").attr("font-size","12px").text("AI冲击指数");
-  svg.append("text").attr("transform","rotate(-90)").attr("x",-height/2).attr("y",14).attr("text-anchor","middle").attr("fill","#8b949e").attr("font-size","12px").text("就业人数（万人）");
+  const axisFs = mobile ? "10px" : "12px";
+  svg.append("text").attr("x",width/2).attr("y",height-4).attr("text-anchor","middle").attr("fill","#8b949e").attr("font-size",axisFs).text("AI冲击指数");
+  svg.append("text").attr("transform","rotate(-90)").attr("x",-height/2).attr("y",14).attr("text-anchor","middle").attr("fill","#8b949e").attr("font-size",axisFs).text("就业人数（万人）");
 }
 
 function renderTreemap(jobs){
   const wrap=document.getElementById("treemap-wrap");
-  const width=Math.max(wrap.clientWidth, 600);
-  const height=Math.max(600, width*0.55);
+  const mobile = isMobile();
+  const width = mobile ? wrap.clientWidth : Math.max(wrap.clientWidth, 600);
+  const height = mobile ? Math.max(400, width*0.8) : Math.max(600, width*0.55);
   const svg=d3.select("#treemap").attr("width",width).attr("height",height);
 
   // Build hierarchy: root -> cat -> job
@@ -434,43 +485,53 @@ function renderTreemap(jobs){
   }
 
   const root = d3.hierarchy(rootData).sum(d=>d.emp||0).sort((a,b)=>b.value-a.value);
-  d3.treemap().size([width,height]).padding(2).paddingTop(20).round(true)(root);
+  const padTop = mobile ? 16 : 20;
+  d3.treemap().size([width,height]).padding(mobile?1:2).paddingTop(padTop).round(true)(root);
 
   // Category group labels
+  const catFontSize = mobile ? "8px" : "10px";
   const cats = svg.selectAll(".cat-group").data(root.children).enter().append("g");
   cats.append("rect").attr("x",d=>d.x0).attr("y",d=>d.y0).attr("width",d=>d.x1-d.x0).attr("height",d=>d.y1-d.y0)
     .attr("fill","none").attr("stroke",d=>colorScale(d3.mean(d.children,c=>c.data.exp)||5)).attr("stroke-opacity",.3);
-  cats.append("text").attr("x",d=>d.x0+4).attr("y",d=>d.y0+14).attr("fill","#8b949e").attr("font-size","10px").attr("font-weight","600")
+  cats.append("text").attr("x",d=>d.x0+3).attr("y",d=>d.y0+(mobile?11:14)).attr("fill","#8b949e").attr("font-size",catFontSize).attr("font-weight","600")
     .text(d=>{
       const w=d.x1-d.x0;
       const name=d.data.name;
+      if(mobile) return w>80?name.slice(0,6)+"…":(w>40?name.slice(0,3)+"…":"");
       return w>120?name:(w>60?name.slice(0,6)+"…":"");
     });
 
-  // Leaf cells
+  // Leaf cells — use click on mobile (touch), mousemove on desktop
   const leaves = root.leaves();
   const cell = svg.selectAll(".cell").data(leaves).enter().append("rect").attr("class","cell")
     .attr("x",d=>d.x0).attr("y",d=>d.y0).attr("width",d=>d.x1-d.x0).attr("height",d=>d.y1-d.y0)
-    .attr("fill",d=>colorScale(d.data.exp)).attr("rx",2)
-    .on("mousemove",(event,d)=>showTooltip(d.data,event))
-    .on("mouseleave",hideTooltip);
+    .attr("fill",d=>colorScale(d.data.exp)).attr("rx",2);
+  if(mobile){
+    cell.on("click",(event,d)=>{event.stopPropagation();showTooltip(d.data,event);});
+  } else {
+    cell.on("mousemove",(event,d)=>showTooltip(d.data,event)).on("mouseleave",hideTooltip);
+  }
 
   // Labels for large enough cells
-  svg.selectAll(".cell-label").data(leaves.filter(d=>(d.x1-d.x0)>45&&(d.y1-d.y0)>18)).enter()
+  const minW = mobile ? 36 : 45, minH = mobile ? 14 : 18;
+  const charW = mobile ? 10 : 13;
+  svg.selectAll(".cell-label").data(leaves.filter(d=>(d.x1-d.x0)>minW&&(d.y1-d.y0)>minH)).enter()
     .append("text").attr("class","cell-label")
     .attr("x",d=>(d.x0+d.x1)/2).attr("y",d=>(d.y0+d.y1)/2)
     .text(d=>{
       const w=d.x1-d.x0, name=d.data.n;
-      const maxChars=Math.floor(w/13);
+      const maxChars=Math.floor(w/charW);
       return name.length>maxChars?name.slice(0,maxChars)+"…":name;
     });
 }
 
 function renderScatter(jobs){
-  const margin={top:20,right:20,bottom:40,left:50};
+  const mobile = isMobile();
+  const margin={top:20,right:20,bottom:40,left:mobile?40:50};
   const cardEl=document.querySelector("#scatter").parentElement;
   const cs=getComputedStyle(cardEl);
-  const width=cardEl.clientWidth-parseFloat(cs.paddingLeft)-parseFloat(cs.paddingRight), height=300;
+  const width=cardEl.clientWidth-parseFloat(cs.paddingLeft)-parseFloat(cs.paddingRight);
+  const height=mobile?250:300;
   const iw=width-margin.left-margin.right, ih=height-margin.top-margin.bottom;
 
   const svg=d3.select("#scatter").attr("width",width).attr("height",height);
@@ -478,34 +539,42 @@ function renderScatter(jobs){
 
   const x=d3.scaleLinear().domain([0,d3.max(jobs,d=>d.sal)+2]).range([0,iw]);
   const y=d3.scaleLinear().domain([0,10.5]).range([ih,0]);
-  const r=d3.scaleSqrt().domain([0,d3.max(jobs,d=>d.emp)]).range([2,20]);
+  const rMax = mobile ? 12 : 20;
+  const r=d3.scaleSqrt().domain([0,d3.max(jobs,d=>d.emp)]).range([mobile?1.5:2,rMax]);
 
-  g.append("g").attr("class","axis").attr("transform",`translate(0,${ih})`).call(d3.axisBottom(x).ticks(6).tickFormat(d=>d+"K"));
+  g.append("g").attr("class","axis").attr("transform",`translate(0,${ih})`).call(d3.axisBottom(x).ticks(mobile?4:6).tickFormat(d=>d+"K"));
   g.append("g").attr("class","axis").call(d3.axisLeft(y).ticks(5));
 
-  g.selectAll(".dot").data(jobs).enter().append("circle").attr("class","dot")
+  const dots = g.selectAll(".dot").data(jobs).enter().append("circle").attr("class","dot")
     .attr("cx",d=>x(d.sal)).attr("cy",d=>y(d.exp)).attr("r",d=>r(d.emp))
-    .attr("fill",d=>colorScale(d.exp)).attr("fill-opacity",.6).attr("stroke",d=>colorScale(d.exp)).attr("stroke-width",.5)
-    .on("mousemove",(event,d)=>{
-      showSimpleTooltip(`
-        <div class="tt-name">${d.n}</div>
-        <div class="tt-grid">
-          <span class="tt-label">月薪中位</span><span class="tt-val">${d.sal}K</span>
-          <span class="tt-label">AI冲击指数</span><span class="tt-val" style="color:${colorScale(d.exp)};font-weight:700">${d.exp}/10</span>
-          <span class="tt-label">从业人数</span><span class="tt-val">${d.emp} 万</span>
-        </div>`, event);
-    })
-    .on("mouseleave",hideTooltip);
+    .attr("fill",d=>colorScale(d.exp)).attr("fill-opacity",.6).attr("stroke",d=>colorScale(d.exp)).attr("stroke-width",.5);
+  const scatterTip = (event,d) => {
+    showSimpleTooltip(`
+      <div class="tt-name">${d.n}</div>
+      <div class="tt-grid">
+        <span class="tt-label">月薪中位</span><span class="tt-val">${d.sal}K</span>
+        <span class="tt-label">AI冲击指数</span><span class="tt-val" style="color:${colorScale(d.exp)};font-weight:700">${d.exp}/10</span>
+        <span class="tt-label">从业人数</span><span class="tt-val">${d.emp} 万</span>
+      </div>`, event);
+  };
+  if(mobile){
+    dots.on("click",(event,d)=>{event.stopPropagation();scatterTip(event,d);});
+  } else {
+    dots.on("mousemove",scatterTip).on("mouseleave",hideTooltip);
+  }
 
-  svg.append("text").attr("x",width/2).attr("y",height-2).attr("text-anchor","middle").attr("fill","#8b949e").attr("font-size","11px").text("月薪中位数(千元)");
-  svg.append("text").attr("transform","rotate(-90)").attr("x",-height/2).attr("y",12).attr("text-anchor","middle").attr("fill","#8b949e").attr("font-size","11px").text("AI冲击指数");
+  const axisFs = mobile ? "10px" : "11px";
+  svg.append("text").attr("x",width/2).attr("y",height-2).attr("text-anchor","middle").attr("fill","#8b949e").attr("font-size",axisFs).text("月薪中位数(千元)");
+  svg.append("text").attr("transform","rotate(-90)").attr("x",-height/2).attr("y",12).attr("text-anchor","middle").attr("fill","#8b949e").attr("font-size",axisFs).text("AI冲击指数");
 }
 
 function renderBoxplot(jobs){
-  const margin={top:20,right:20,bottom:60,left:50};
+  const mobile = isMobile();
+  const margin={top:20,right:20,bottom:mobile?70:60,left:mobile?40:50};
   const cardEl=document.querySelector("#boxplot").parentElement;
   const cs=getComputedStyle(cardEl);
-  const width=cardEl.clientWidth-parseFloat(cs.paddingLeft)-parseFloat(cs.paddingRight), height=300;
+  const width=cardEl.clientWidth-parseFloat(cs.paddingLeft)-parseFloat(cs.paddingRight);
+  const height=mobile?260:300;
   const iw=width-margin.left-margin.right, ih=height-margin.top-margin.bottom;
 
   const svg=d3.select("#boxplot").attr("width",width).attr("height",height);
@@ -520,7 +589,7 @@ function renderBoxplot(jobs){
   const y=d3.scaleLinear().domain([0,10.5]).range([ih,0]);
 
   g.append("g").attr("class","axis").attr("transform",`translate(0,${ih})`).call(d3.axisBottom(x))
-    .selectAll("text").attr("transform","rotate(-20)").attr("text-anchor","end").attr("font-size","10px");
+    .selectAll("text").attr("transform",mobile?"rotate(-45)":"rotate(-20)").attr("text-anchor","end").attr("font-size",mobile?"9px":"10px");
   g.append("g").attr("class","axis").call(d3.axisLeft(y).ticks(5));
 
   eduOrder.forEach(edu=>{
@@ -544,25 +613,28 @@ function renderBoxplot(jobs){
     // Median
     g.append("line").attr("x1",x(edu)).attr("x2",x(edu)+bw).attr("y1",y(med)).attr("y2",y(med)).attr("stroke","#fff").attr("stroke-width",2);
 
-    // Hover zone (covers whiskers + box)
-    g.append("rect").attr("x",x(edu)).attr("y",y(hi)).attr("width",bw).attr("height",y(lo)-y(hi))
-      .attr("fill","transparent").attr("cursor","pointer")
-      .on("mousemove",(event)=>{
-        showSimpleTooltip(`
-          <div class="tt-name">${edu}</div>
-          <div class="tt-grid">
-            <span class="tt-label">职业数量</span><span class="tt-val">${vals.length}</span>
-            <span class="tt-label">最高值</span><span class="tt-val">${hi}</span>
-            <span class="tt-label">Q3</span><span class="tt-val">${q3}</span>
-            <span class="tt-label">中位数</span><span class="tt-val" style="color:${colorScale(med)};font-weight:700">${med}</span>
-            <span class="tt-label">Q1</span><span class="tt-val">${q1}</span>
-            <span class="tt-label">最低值</span><span class="tt-val">${lo}</span>
-          </div>`, event);
-      })
-      .on("mouseleave",hideTooltip);
+    // Hover/tap zone
+    const tipHtml = `
+      <div class="tt-name">${edu}</div>
+      <div class="tt-grid">
+        <span class="tt-label">职业数量</span><span class="tt-val">${vals.length}</span>
+        <span class="tt-label">最高值</span><span class="tt-val">${hi}</span>
+        <span class="tt-label">Q3</span><span class="tt-val">${q3}</span>
+        <span class="tt-label">中位数</span><span class="tt-val" style="color:${colorScale(med)};font-weight:700">${med}</span>
+        <span class="tt-label">Q1</span><span class="tt-val">${q1}</span>
+        <span class="tt-label">最低值</span><span class="tt-val">${lo}</span>
+      </div>`;
+    const zone = g.append("rect").attr("x",x(edu)).attr("y",y(hi)).attr("width",bw).attr("height",y(lo)-y(hi))
+      .attr("fill","transparent").attr("cursor","pointer");
+    if(mobile){
+      zone.on("click",(event)=>{event.stopPropagation();showSimpleTooltip(tipHtml,event);});
+    } else {
+      zone.on("mousemove",(event)=>showSimpleTooltip(tipHtml,event)).on("mouseleave",hideTooltip);
+    }
   });
 
-  svg.append("text").attr("transform","rotate(-90)").attr("x",-height/2).attr("y",12).attr("text-anchor","middle").attr("fill","#8b949e").attr("font-size","11px").text("AI冲击指数");
+  const axisFs = mobile ? "10px" : "11px";
+  svg.append("text").attr("transform","rotate(-90)").attr("x",-height/2).attr("y",12).attr("text-anchor","middle").attr("fill","#8b949e").attr("font-size",axisFs).text("AI冲击指数");
 }
 
 function renderCatTable(categories){
